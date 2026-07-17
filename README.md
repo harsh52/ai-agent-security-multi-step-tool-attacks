@@ -81,11 +81,13 @@ guardrail-robustness panel) is planned but **gated on data** — see `docs/V2.1_
 | Submission | Public score | Private score | Notes |
 |---|---|---|---|
 | v1 baseline | **2.080** | *sealed* | weak reference; confirms pipeline + calibrates the field |
-| v2 measurement-first | *scoring* | *sealed* | pure-exfil throughput signal |
+| v2 measurement-first | **26.430** | *sealed* | pure-exfil amortization — **~12.7× over v1** |
 
 Leaderboard context at time of writing: #1 ≈ **103.7**, top-50 within ~20 points — a dense, mature frontier.
-The **private** scores are hidden by Kaggle until the competition closes, so the private half of the board is
-handled by **offline hedging**, not live measurement.
+v2's **26.4** is far from the 1000-point per-cell cap, so **public has real headroom**: the ~4× gap to the top
+cluster is a compliance/throughput problem (getting the models to emit more firing posts per unit budget), not a
+structural one. The **private** scores are hidden by Kaggle until the competition closes, so the private half of
+the board is handled by **offline hedging**, not live measurement.
 
 ---
 
