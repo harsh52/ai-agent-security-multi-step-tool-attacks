@@ -84,7 +84,8 @@ guardrail-robustness panel) is planned but **gated on data** — see `docs/V2.1_
 | v2 measurement-first | **26.430** | *sealed* | pure-exfil amortization — **~12.7× over v1** |
 | v3 probe-once/fill-offline | **Format Error** | — | offline fill @ `REPLAY_SAFE 0.92` overshot the all-or-nothing replay budget (+ raw control tokens) → invalid submission |
 | v3.1 safe | *scoring* | *sealed* | self-limiting verify-then-keep + frugality (safe revert of v3) |
-| v4 offline-fill | *scoring* | *sealed* | **the real lever** — offline fill sized to replay's fast in-process latency |
+| v4 offline-fill | ERROR (context overflow) | — | 32-msg chains overflow 8192 ctx; caught by validator |
+| v5 short-chain | *validated SAFE (~233/cell proj)* | *sealed* | 16-msg terse offline-fill; end-to-end validated before submit |
 
 ### Key finding from the local real-model test bench (Loop B)
 
