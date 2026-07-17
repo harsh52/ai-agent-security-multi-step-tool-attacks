@@ -1,0 +1,18 @@
+{
+  "id": "harsh52/jed-full-replay-validator",
+  "title": "JED Full Replay Validator",
+  "code_file": "full-replay-validator.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "dataset_sources": [],
+  "competition_sources": [
+    "ai-agent-security-multi-step-tool-attacks"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
