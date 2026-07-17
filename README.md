@@ -82,6 +82,7 @@ guardrail-robustness panel) is planned but **gated on data** — see `docs/V2.1_
 |---|---|---|---|
 | v1 baseline | **2.080** | *sealed* | weak reference; confirms pipeline + calibrates the field |
 | v2 measurement-first | **26.430** | *sealed* | pure-exfil amortization — **~12.7× over v1** |
+| v3 probe-once/fill-offline | *scoring* | *sealed* | fixes v2's compliance under-fill + token frugality + `REPLAY_SAFE` 0.92 |
 
 Leaderboard context at time of writing: #1 ≈ **103.7**, top-50 within ~20 points — a dense, mature frontier.
 v2's **26.4** is far from the 1000-point per-cell cap, so **public has real headroom**: the ~4× gap to the top
