@@ -1,0 +1,17 @@
+# Local IDE / assistant config
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Kaggle credentials — never commit
+kaggle.json
+**/kaggle.json
+access_token
+
+# OS
+.DS_Store
