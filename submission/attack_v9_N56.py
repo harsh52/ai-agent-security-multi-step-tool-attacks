@@ -49,11 +49,11 @@ M = 16                          # SHORT chain: safely under the 8192 context win
 MAX_CANDIDATES = 2000
 MAX_MSG_CHARS = 2000
 REPLAY_BUDGET_S = 9000.0
-# v9 LADDER (Rung X): top of the ladder. N=80 (1280 posts), approaching the 1616 that
-# failed. If this lands, ~100+/cell is reachable (top cluster); if it fails, the cliff is
-# between 896 and 1280. Parallel ladder (26.43 banked as floor).
-# Sizing: N = REPLAY_SAFE*9000/(16*ASSUMED_REPLAY_LAT_S); 0.5*9000/(16*3.5)=80.
-ASSUMED_REPLAY_LAT_S = 3.5
+# v9 LADDER (Rung H): upper bracket of the cliff map. N=56 (896 posts), between v8's 640
+# and the 1616 that failed. Parallel ladder (26.43 banked as floor). If this lands, the
+# safe ceiling is >=896 posts; if it fails, the cliff is between 640 and 896.
+# Sizing: N = REPLAY_SAFE*9000/(16*ASSUMED_REPLAY_LAT_S); 0.5*9000/(16*5)=56.
+ASSUMED_REPLAY_LAT_S = 5.0
 REPLAY_SAFE = 0.5
 PROBE_MSGS = 3
 GEN_MARGIN_S = 300.0
