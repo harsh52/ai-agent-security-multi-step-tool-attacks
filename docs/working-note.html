@@ -193,20 +193,24 @@
 
   <div class="insight star">
     <span class="tag b">Insight 2 · the headline finding</span>
-    <h3>A blocking guardrail can time out — and zero — the whole evaluation</h3>
-    <p>This is a property of the <b>defense-plus-budget system</b>, not of any single prompt. When a tool call is
-      <em>blocked</em>, the agent spends materially more compute per step (longer reasoning / re-attempts), even
-      though it records fewer successful calls:</p>
+    <h3>The private guardrail's volume-fragility zeros the whole evaluation</h3>
+    <p>The <b>public</b> cell scales cleanly — the real gateway replayed <b>~4,200 exfil posts</b> and scored
+      <b>386</b> on one cell, so the <em>attack</em> isn't the limit. The <b>private</b> cell is the opposite:
+      reading the scorer across a ladder of returned volumes reveals a sharp, reproducible transition —</p>
     <div class="bars">
-      <div class="bar-row"><span class="lbl">Allowed (public)</span><span class="track"><span class="fill a"></span></span><span class="val">23.9 s</span></div>
-      <div class="bar-row"><span class="lbl">Blocked (private proxy)</span><span class="track"><span class="fill b"></span></span><span class="val">45.6 s</span></div>
+      <div class="bar-row"><span class="lbl">≤ 256 posts</span><span class="track"><span class="fill a" style="width:22%"></span></span><span class="val" style="color:var(--pass)">SCORES</span></div>
+      <div class="bar-row"><span class="lbl">450–640 posts</span><span class="track"><span class="fill b" style="width:52%;background:linear-gradient(90deg,#d98c2b,#b0500a)"></span></span><span class="val" style="color:var(--signal)">CRASH</span></div>
+      <div class="bar-row"><span class="lbl">≥ 900 posts</span><span class="track"><span class="fill" style="width:100%;background:linear-gradient(90deg,#c0473f,#b3261e)"></span></span><span class="val" style="color:var(--fail)">TIMEOUT</span></div>
     </div>
-    <div class="xnote">≈ 1.91× slowdown per candidate — measured on identical candidates, same instrument.</div>
-    <p style="margin-top:1em">Individually harmless. But under an <b>all-or-nothing</b> per-cell budget, an attack
-      sized to fit the fast (allowing) cell silently overruns the slow (blocking) cell — and a single cell's
-      timeout <b>invalidates every cell</b>. A defensive control is thereby turned into a
-      <b>denial-of-service against the evaluation itself</b>, purely through compute amplification and budget
-      coupling.</p>
+    <div class="xnote">scores → gateway <em>crash</em> → <em>timeout</em> as volume rises — both zero all four cells.</div>
+    <p style="margin-top:1em">Because <b>any</b> one cell's failure raises <code>INVALID_SUBMISSION</code> and
+      zeros all four, a stateful/expensive private guardrail behaves at scale like a
+      <b>denial-of-service against the evaluation itself</b> — first crashing, then timing out — and imposes a
+      <b>hard ceiling</b> on the whole submission regardless of public headroom.</p>
+    <p style="margin:.6em 0 0;font-size:14px;color:var(--ink-soft)"><b>Honest method note:</b> our first local
+      proxy (a deny-all guardrail) measured only a mild ~1.9× slowdown and rated these volumes “safe” — the real
+      scorer then failed them. The proxy <b>under-modeled</b> the component; only the scoring oracle is
+      authoritative, which is why we switched to the parallel-submission ladder.</p>
   </div>
 
   <h3>Defensive takeaways for benchmark &amp; guardrail designers</h3>
@@ -227,19 +231,21 @@
     <thead><tr><th>Measurement</th><th>Value</th><th>Instrument</th></tr></thead>
     <tbody>
       <tr><td>Agent compliance with direct tool-use wording</td><td class="v">~100%</td><td>probe bench (both models)</td></tr>
-      <tr><td>Public per-candidate replay latency</td><td class="v">~24 s</td><td>block-cost probe (~29 s full-run avg)</td></tr>
-      <tr><td>Block-induced slowdown</td><td class="v">~1.91×</td><td>block-cost probe</td></tr>
-      <tr><td>Realized public-cell score (one model, large N)</td><td class="v">measured</td><td>full-gateway reproduction</td></tr>
+      <tr><td>Public single-cell score at ~4.2k posts</td><td class="v">386</td><td>full-gateway reproduction (fits ~7.6ks)</td></tr>
+      <tr><td>Deny-all proxy slowdown (later shown to under-model)</td><td class="v">~1.9×</td><td>block-cost probe</td></tr>
+      <tr><td><b>Private-cell success ceiling</b> (whole-submission cap)</td><td class="v">~256 posts</td><td><b>parallel-submission ladder</b></td></tr>
     </tbody>
   </table></div>
 
   <h2><span class="num">5</span>Limitations &amp; honest caveats</h2>
-  <p>The private guardrail is not shipped to competitors, so “it blocks share-egress” is an <b>inference</b> — the
-    best explanation for a private-cell timeout when the public cell fits comfortably. The block-cost probe is a
-    <b>proxy</b> for its behavior, and the attack is sized with margin to absorb the uncertainty. An exfil-only
-    strategy is optimal for the <em>public</em> score but, by design, scores near zero against a payload-aware
-    private guardrail; diversifying into clean-provenance actions is the natural next step and is a question of
-    <em>which predicate survives which defense</em>.</p>
+  <p>The private guardrail is <b>not observable at all</b> — not shipped locally, and the private leaderboard is
+    sealed until the competition closes. Its internal logic is <b>inferred</b>; only its failure <em>boundaries</em>
+    are measured, through the scoring oracle. Consequently, <b>pure single-predicate exfil is hard-capped near the
+    ~256-post band</b> on this benchmark: the public cells could score far higher, but the private cell zeros
+    anything above the ceiling. Raising it needs an attack the private cell tolerates at higher volume (fewer/denser
+    candidates, or a different predicate such as clean-provenance <code>email.send</code>) — each itself testable
+    only via the ~10-hour scoring oracle. We also report explicitly that a local proxy for the private cell gave
+    <b>false confidence</b>, so others don't repeat it.</p>
 
   <div class="resp">
     <div class="eyebrow">Responsible communication</div>

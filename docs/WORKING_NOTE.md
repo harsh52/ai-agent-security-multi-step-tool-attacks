@@ -20,10 +20,13 @@ security insights that we believe are useful to the benchmark community:
 
 1. A **payload-blind guardrail gap**: the reference guardrail inspects a tool call's *target* but not its
    *data*, so a benign-looking destination carrying the sentinel is allowed.
-2. A **compute-amplification timeout** (the more novel finding): a guardrail that *blocks* a tool call causes
-   the agent to spend materially more compute per step, and under an **all-or-nothing time budget** this can
-   **time out an entire evaluation and zero every cell** — a denial-of-service against the *evaluation itself*,
-   induced by a defensive control.
+2. A **guardrail volume-fragility under an all-or-nothing budget** (the more novel finding): the hidden
+   private guardrail is not merely a filter — at scale it becomes a **liability to the evaluation itself**. As
+   the returned candidate volume grows, the private cell transitions from *scoring* → **crashing** (a gateway
+   exception at moderate volume) → **timing out** (at high volume); and because *any* cell failure raises
+   `INVALID_SUBMISSION` and zeros **all four cells**, a stateful/expensive guardrail effectively **caps the
+   whole submission's score and can be driven to a denial-of-service against the evaluation.** We characterized
+   this **empirically**, because the private component cannot be run locally (Section 3.4, 4.2).
 
 ---
 
@@ -80,6 +83,20 @@ Each stage is a self-contained notebook run on the competition's own SDK and mod
 This staged pipeline turns a blind ~10-hour submission into a set of ~15-minute measurements, each isolating one
 unknown (compliance, format, overflow, budget, block-amplification).
 
+### 3.4 Characterizing an *untestable* component: the parallel-submission ladder
+The four instruments above all share a blind spot: **the private guardrail is injected by the host only at
+scoring time and is not shipped to competitors**, so *no* local instrument can exercise the private cells.
+When local proxies (a deny-all guardrail) proved to *under-model* the real private cell — an attack the proxy
+rated "safe" still failed on the real scorer — we treated the private cell as an unknown to be measured
+*through the only oracle available: the scorer itself.*
+
+The efficient design is a **parallel-submission ladder.** The host scores independent submissions
+concurrently and keeps each competitor's best, so instead of one blind guess per ~10-hour cycle we submit a
+*spread* of candidate volumes at once (e.g. 448 / 640 / 896 / 1,280 posts) and read them together. One cycle
+then yields a **cliff map** — the volume at which the private cell tips from success to failure — rather than a
+single data point. This is the general lesson: **when a scored component is unobservable, design a batched
+experiment that extracts a response curve from the scoring oracle, not a single point estimate.**
+
 ---
 
 ## 4. Security insights
@@ -91,24 +108,38 @@ its payload is therefore allowed. **Defensive takeaway:** guardrails for share/e
 *payload*, not just the destination; target-only policies are trivially bypassed by moving the sensitive content
 into the body.
 
-### 4.2 Blocking-guardrail compute-amplification → evaluation timeout (the more important finding)
+### 4.2 The private guardrail's volume-fragility zeros the evaluation (the more important finding)
 This is the finding we most want to surface, because it is a property of the *defense-plus-budget system*, not
-of any single prompt.
+of any single prompt — and it is what actually capped our score.
 
-- Under the **allowing** (public) guardrail, a candidate replays in ~24 s.
-- Under a **blocking** guardrail (a proxy for the private one), the *same* candidate takes ~46 s — a **~1.9×
-  slowdown** — because a blocked tool result makes the agent spend materially more compute per step (longer
-  reasoning / re-attempts) even though it ultimately records *fewer* successful calls.
+The **public** cell is cheap and scales cleanly: on the real gateway it replayed **~4,200 successful exfil
+posts** (263 candidates) in ~7,600 s and scored **386** on a single model cell — so the *attack* is not the
+limit. The **private** cell is the opposite. Reading the scorer's response across a ladder of returned volumes
+(Section 3.4) reveals a sharp, reproducible transition:
 
-Individually harmless. But the scoring harness uses an **all-or-nothing** time budget per cell, and a timeout in
-*any* cell **invalidates the entire submission**. So an attack sized to comfortably fit the fast (allowing) cell
-can silently blow the budget on the slow (blocking) cell — and take **all four cells to zero**. In effect, a
-defensive control (blocking) can be turned into a **denial-of-service against the evaluation**, purely through
-compute amplification and budget coupling.
+| Returned volume | Private-cell outcome (real scorer) |
+|---|---|
+| ≤ ~256 posts | **scores** (a valid submission is produced) |
+| ~450–640 posts | **gateway exception** — a hard crash (`GATEWAY_RAISED_EXCEPTION`) |
+| ≥ ~900 posts | **timeout** — the per-cell budget is exceeded (`INVALID_SUBMISSION`) |
 
-**Why this matters for agent security broadly:** it shows that the *interaction* between a guardrail's decision
-and the harness's resource budget is itself an attack surface. A guardrail evaluated only for "does it block the
-bad action?" can still fail the system if blocking is expensive and budgets are shared/coupled.
+Both failure modes raise a `GatewayRuntimeError`, and because the harness zeros **all four cells** on *any* one
+cell's failure, the practical effect is a **hard ceiling**: the whole submission's score is bounded by the
+*most fragile* cell, independent of how much the public cells could score. A defensive control that is stateful
+and/or expensive per call thus behaves, at scale, like a **denial-of-service against the evaluation itself** —
+first crashing, then timing out, as load increases.
+
+**An honest note on method (this is itself a finding).** Our first proxy for the private cell — a local
+deny-all guardrail — measured only a mild **~1.9×** per-candidate slowdown and rated moderate volumes "safe."
+The real scorer then failed those same volumes. **The proxy under-modeled the real component**, which is
+precisely why we abandoned proxy-based sizing for the empirical ladder (Section 3.4). The lesson: a
+locally-fabricated stand-in for an unobservable defense can give false confidence; only the scoring oracle is
+authoritative.
+
+**Why this matters for agent security broadly:** it shows the *interaction* between a guardrail's per-call cost
+and the harness's resource budget is itself an attack surface. A guardrail evaluated only for "does it block
+the bad action?" can still fail the *system* — crash it or DoS it — if it is expensive/stateful and budgets are
+coupled all-or-nothing.
 
 **Defensive takeaways (for benchmark and guardrail designers):**
 - **Decouple budgets from outcomes:** use per-candidate timeouts (skip-and-continue) rather than an
@@ -129,23 +160,29 @@ notebook. Key measured quantities (for transparency, not tuning targets):
 |---|---|---|
 | Agent compliance with direct tool-use wording | ~100% (both models) | probe bench |
 | Public per-candidate replay latency | ~24 s steady-state (~29 s full-run avg, incl. multi-hop) | block-cost probe / full-gateway repro |
-| Block-induced slowdown | **~1.91×** | block-cost probe |
-| Realized public-cell score (one model, large N) | measured on the real gateway | full-gateway repro |
+| Public single-cell score at 263 candidates (~4.2k posts) | **386** in ~7,600 s (fits) | full-gateway repro |
+| Deny-all proxy slowdown (later shown to *under*-model private) | ~1.9× | block-cost probe |
+| **Private-cell success ceiling** (whole-submission cap) | **~256 posts**; crash ~450–640; timeout ≥ ~900 | **parallel-submission ladder** |
 
 The generator itself is about 150 lines: it probes a wording once, then emits `N` short, deterministic
-message-chains sized so that even the *slow (blocking)* cell fits its budget with margin. The safety margin is
-the whole point — the number that must be conservative is set by the **slowest** measured cell.
+message-chains. The binding number is **not** replay-seconds but **total returned post volume**, which must sit
+under the private cell's empirically-measured success ceiling.
 
 ---
 
 ## 6. Limitations and honest caveats
 
-- The private guardrail is not shipped to competitors, so "it blocks share-egress" is an **inference** — the
-  best explanation for a private-cell timeout when the public cell fits comfortably. Our block-cost probe is a
-  **proxy** for its behavior, and we size with margin to absorb the uncertainty.
-- Our exfil-only strategy is optimal for the *public* score (highest-weight predicate, spammed) but, by design,
-  scores near zero against a payload-aware private guardrail. Diversifying into clean-provenance actions is the
-  natural next step for the private configuration and is a matter of *which* predicate survives *which* defense.
+- The private guardrail is **not observable at all**: it is not shipped locally, and the private leaderboard is
+  sealed until the competition closes. So its internal logic is **inferred**, and its failure boundary is
+  measured only through the scoring oracle (Section 3.4). We could not, and do not, claim to know *why* it
+  crashes vs. times out — only the reproducible volume boundaries at which it does.
+- Because of that volume ceiling, **pure single-predicate exfil is capped near the ~256-post success band on
+  this benchmark** — the public cells could score far higher, but the private cell zeros anything above the
+  ceiling. Raising it would require an attack the private cell tolerates at higher volume (e.g. fewer, denser
+  candidates, or a different predicate such as clean-provenance `email.send` CONFUSED_DEPUTY) — each of which is
+  itself only testable through the scoring oracle.
+- Local proxies for the private cell gave **false confidence** (Section 4.2); we report this explicitly so
+  others don't repeat it.
 - We deliberately do not chase the cell-diversity bonus; it is a rounding term relative to the severity sum.
 
 ---
@@ -163,12 +200,15 @@ this note is intended or useful as instructions for attacking a real deployed sy
 
 ## 8. Contribution checklist (mapped to the judging criteria)
 
-- **Technical clarity / reproducibility:** exact mechanics (Section 2), a four-instrument pipeline with measured
-  values (Sections 3, 5).
-- **Methodological contribution:** measurement-first offline-fill, and the rule to *validate on the real path and
-  size for the slowest cell* (Section 3).
-- **Security insight:** the payload-blind gap, and the novel *blocking-guardrail compute-amplification timeout*
-  (Section 4).
-- **Usefulness to the community:** concrete harness/guardrail fixes — budget decoupling, retry bounding, cell
-  isolation, payload inspection (Section 4).
+- **Technical clarity / reproducibility:** exact mechanics (Section 2); a five-instrument pipeline with measured
+  values including the empirical cliff (Sections 3, 5).
+- **Methodological contribution:** measurement-first offline-fill; the rule to *validate on the real path and
+  size by the binding (private) cell*; and — for a scored component that is **unobservable locally** — the
+  **parallel-submission ladder** that extracts a response curve from the scoring oracle instead of a single
+  guess (Section 3.4). We also document a proxy that gave *false confidence*, as a cautionary result.
+- **Security insight:** the payload-blind gap (4.1), and the novel **guardrail volume-fragility** — a
+  stateful/expensive private guardrail that, under an all-or-nothing budget, first *crashes* then *times out* as
+  load rises, zeroing the entire evaluation (4.2).
+- **Usefulness to the community:** concrete harness/guardrail fixes — budget decoupling, per-candidate timeouts,
+  bounding per-call guardrail cost, cell isolation, payload inspection (Section 4).
 - **Responsible communication:** benchmark-scoped throughout; defensive framing (Section 7).

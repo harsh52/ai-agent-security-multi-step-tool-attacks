@@ -117,8 +117,20 @@ wrong metric.
 
 The failure cliff is between **~320 and ~1616 posts.** "persistent_provenance" likely does **stateful,
 super-linear work per call**, so cost explodes with post count in a way deny-all never shows. **RULE: size
-by total posts inside the proven-landing zone, NOT by any latency proxy.** v8 = N=40 (640 posts) = land-first
-probe to (a) beat 26.43 and (b) finally observe the private-cell scores (never seen — all prior blanks hid them).
+by total posts inside the proven-landing zone, NOT by any latency proxy.**
+
+**FINAL RESULT (parallel-submission ladder, 2026-07-18):** submitted N=28/40/56/80 (448/640/896/1280 posts)
+in parallel + resubmits. Outcome — **two distinct real failure modes by volume:**
+- **~256 posts (v2)** = LANDS (26.43).
+- **~450–640 posts (N=28, N=40)** = **"A system error"** = `GATEWAY_RAISED_EXCEPTION` (gateway CRASH), reproduced
+  across resubmits (not infra — perfectly size-correlated).
+- **≥~900 posts (N=56/80/101)** = **"incorrect format"** = `INVALID_SUBMISSION` (TIMEOUT).
+Both zero all four cells. ⇒ **the private cell hard-caps pure single-predicate exfil at ~256 posts (~26.43).**
+Also: **private scores are SEALED until competition end** (privateScore blank for everyone) — a landing never
+reveals them, correcting the earlier assumption. **DECISION: lock in 26.43 (banked), stop probing the untestable
+wall, invest in the Working Note** (docs/WORKING_NOTE.md — the parallel-ladder method + volume-fragility insight
+are the real contribution). To beat 26.43 would require an attack the private cell tolerates at higher volume
+(fewer/denser candidates or a different predicate) — all only testable via the 10h scoring oracle.
 
 ---
 
