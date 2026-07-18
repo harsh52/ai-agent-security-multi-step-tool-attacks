@@ -128,11 +128,11 @@ notebook. Key measured quantities (for transparency, not tuning targets):
 | Measurement | Value | Instrument |
 |---|---|---|
 | Agent compliance with direct tool-use wording | ~100% (both models) | probe bench |
-| Public per-candidate replay latency | ~24 s | full-gateway repro |
+| Public per-candidate replay latency | ~24 s steady-state (~29 s full-run avg, incl. multi-hop) | block-cost probe / full-gateway repro |
 | Block-induced slowdown | **~1.91×** | block-cost probe |
 | Realized public-cell score (one model, large N) | measured on the real gateway | full-gateway repro |
 
-The generator itself is a few hundred lines: it probes a wording once, then emits `N` short, deterministic
+The generator itself is about 150 lines: it probes a wording once, then emits `N` short, deterministic
 message-chains sized so that even the *slow (blocking)* cell fits its budget with margin. The safety margin is
 the whole point — the number that must be conservative is set by the **slowest** measured cell.
 
