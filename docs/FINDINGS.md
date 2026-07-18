@@ -99,6 +99,29 @@ deny-all-`http.post` guardrail) before trusting any N. **v5 (N=182) and v6 (N=26
 
 ---
 
+## 1d. UPDATE (2026-07-18): the deny-all proxy is WRONG — total-post-count predicts landing
+
+v7 (N=101) **also** failed ("Submission Format Error" = gateway raised → no valid submission.csv).
+The both-model block-test then measured deny-all slowdown = **gpt_oss 1.88×, gemma 0.88×** → it says
+N=101 (even ~150) is safe. **But v7 blanked anyway.** Conclusion: **the deny-all block-test does NOT
+reproduce the real private (`persistent_provenance`) cell** — sizing N by replay-*seconds* is chasing the
+wrong metric.
+
+**What actually predicts landing = TOTAL POST COUNT** (empirical, on the real scorer):
+| Sub | posts | result |
+|---|---|---|
+| v1 (34×1) | ~34 | ✅ 2.08 |
+| v2 (~10×32) | ~320 | ✅ 26.43 |
+| v7 (101×16) | ~1616 | ❌ Format Error |
+| v6 (263×16) | ~4208 | ❌ Format Error |
+
+The failure cliff is between **~320 and ~1616 posts.** "persistent_provenance" likely does **stateful,
+super-linear work per call**, so cost explodes with post count in a way deny-all never shows. **RULE: size
+by total posts inside the proven-landing zone, NOT by any latency proxy.** v8 = N=40 (640 posts) = land-first
+probe to (a) beat 26.43 and (b) finally observe the private-cell scores (never seen — all prior blanks hid them).
+
+---
+
 ## 2. The three hard constraints (each one killed a submission)
 
 1. **All-or-nothing replay budget (9000s/board).** `_replay_and_score` must finish EVERY candidate within
