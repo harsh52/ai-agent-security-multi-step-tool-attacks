@@ -1,0 +1,18 @@
+{
+  "id": "harsh52/jed-block-test",
+  "title": "JED Block Test",
+  "code_file": "block-test.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "dataset_sources": [],
+  "competition_sources": [
+    "ai-agent-security-multi-step-tool-attacks"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}

@@ -52,6 +52,32 @@ within the last 5 tool events of a web/email read.)
 
 ---
 
+## 1b. THE PRIVATE-CELL TIMEOUT TRAP (killed v5 AND v6) — most important lesson
+
+Reverse-engineered from `jed_attack_gateway.py` + the full-gateway repro (`harsh52/jed-gateway-repro`):
+
+- **Budget is per `(model, guardrail)` cell** — each generation and each guardrail replay gets its **own
+  fresh 9000s** (`get_all_predictions`, line ~761). NOT a shared budget.
+- **BUT a timeout in ANY one cell zeros the WHOLE submission.** Line ~788: `except (ModelAttackTimedOut,
+  ModelEvaluationTimedOut): raise GatewayRuntimeError(INVALID_SUBMISSION)` → all four cells come back **blank**
+  ("COMPLETE but no score", same signature as a format error).
+- **The public replay is fast and fits** — the repro clocked our N=263 offline-fill at **~25s/candidate →
+  ~6600s < 9000s**. So the public cells were never the problem.
+- **The private guardrail is the killer.** The private guardrail (`persistent_provenance`) **blocks** our
+  `http.post`, and a blocked post makes the model **burn its 8 tool-hops retrying** (we already see multi-hop
+  in the *public* log — one candidate fired **48 posts** from 16 messages). So the **private replay runs
+  several× slower than the public replay → overruns its 9000s → timeout → whole submission zeroed.**
+- **Why our validator missed it:** it (and the interactive test bench) only ever replayed against the
+  **public** guardrail — the private guardrail isn't shipped locally. We validated the fast cell and never
+  measured the slow one.
+
+**The rule this adds:** the binding constraint is the **SLOWEST cell (the blocking private replay)**, not the
+public one. Size N against a *pessimistic* private-replay cost, use single-post-terminal wording so a blocked
+call doesn't trigger 8 hops of retries, and measure the block-slowdown locally (replay under a
+deny-all-`http.post` guardrail) before trusting any N. **v5 (N=182) and v6 (N=263) both blanked this way.**
+
+---
+
 ## 2. The three hard constraints (each one killed a submission)
 
 1. **All-or-nothing replay budget (9000s/board).** `_replay_and_score` must finish EVERY candidate within
