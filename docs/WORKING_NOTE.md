@@ -108,9 +108,29 @@ its payload is therefore allowed. **Defensive takeaway:** guardrails for share/e
 *payload*, not just the destination; target-only policies are trivially bypassed by moving the sensitive content
 into the body.
 
-### 4.2 The private guardrail's volume-fragility zeros the evaluation (the more important finding)
-This is the finding we most want to surface, because it is a property of the *defense-plus-budget system*, not
-of any single prompt — and it is what actually capped our score.
+### 4.2 The 9,000s wall-clock budget makes this a throughput problem (corrected)
+
+> **⚠️ Correction (2026-07-19).** An earlier draft framed our high-volume failures as a novel "private-guardrail
+> volume-fragility / DoS." Reading the public leaderboard notebooks (which score **80–87 with ~900+ posts per
+> row**) showed that framing was **overstated**: there is *no* hard volume cap. Our failures came from (a) a
+> **blind, non-self-limiting fill** that overran the wall-clock budget, and (b) a **flaky evaluator window**
+> (a host-side update that format-errored everyone, GPU-capacity issues, and an accelerator-reset trap). The
+> honest, load-bearing finding is the simpler one below.
+
+The real constraint is that **each `(model, guardrail)` cell has a fixed ~9,000s *wall-clock* budget, and any
+cell that overruns raises `INVALID_SUBMISSION` and zeros all four cells.** So the benchmark is fundamentally a
+**throughput problem**: maximize successful posts per second, and **size the returned set by measured cost so no
+cell overruns.** The winning pattern (reproduced across public notebooks) is a **deadline- and replay-cost-aware
+self-limiting fill**: probe wordings, pick the best by `effective_cost = latency / fire_rate`, then verify-and-
+bank posts while summing measured cost and stopping at ~0.95–0.99 × budget. Because the budget is wall-clock, a
+*blind fixed-count* fill is fragile (it overruns when the environment runs slower), while a *self-limiting* fill
+cannot. Per-post latency is dominated by the model's reasoning, so the biggest throughput lever is **suppressing
+chain-of-thought** (e.g., a harmony analysis stub in the message body) so the agent emits the tool call directly.
+
+**Defensive takeaway that survives the correction:** coupling an all-or-nothing budget across cells means one
+slow/expensive configuration zeros an entire evaluation — so harnesses should use **per-candidate timeouts and
+cell isolation** rather than all-or-nothing per-cell budgets. *(Retained below; the original over-strong
+"volume-fragility" claim is withdrawn.)*
 
 The **public** cell is cheap and scales cleanly: on the real gateway it replayed **~4,200 successful exfil
 posts** (263 candidates) in ~7,600 s and scored **386** on a single model cell — so the *attack* is not the
