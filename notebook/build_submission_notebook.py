@@ -72,11 +72,18 @@ SELFCHECK = (
     "        _proj_cell = min(1000, _posts * 16 / 200)\n"
     "        print(f'[SELF-CHECK] will return N={_N} candidates x {_M} msgs x {_PPM} posts/msg = {_posts} posts/cell')\n"
     "        print(f'[SELF-CHECK] projected score ~{_proj_cell:.0f}/cell (if it lands)')\n"
+    "    if getattr(_mod, 'TEMPLATES', None) is not None:\n"
+    "        print(f'[SELF-CHECK] deadline-aware self-limiting fill: N sized at scoring time from '\n"
+    "              f'measured cost (REPLAY_SAFE={getattr(_mod, \"REPLAY_SAFE\", \"?\")}); {len(_mod.TEMPLATES)} templates')\n"
+    "        for _nm, _tpl in _mod.TEMPLATES:\n"
+    "            print(f'[SELF-CHECK]   template {_nm}: {_tpl.format(m=\"SECRET_MARKER\", u=\"http://aa.co\")[:120]!r}')\n"
     "    # sample the first user message so we can eyeball the wording\n"
     "    try:\n"
-    "        _algo = _mod.AttackAlgorithm()\n"
-    "        _msg = _algo._multi_msg() if hasattr(_algo, '_multi_msg') else _mod._VECTORS[0](_algo._next_url())\n"
-    "        print(f'[SELF-CHECK] sample message: {_msg[:110]!r}')\n"
+    "        if hasattr(_mod, '_message'):\n"
+    "            _msg = _mod._message(_mod.TEMPLATES[0][1], 0)\n"
+    "        else:\n"
+    "            _algo = _mod.AttackAlgorithm(); _msg = (_algo._multi_msg() if hasattr(_algo, '_multi_msg') else _mod._VECTORS[0](_algo._next_url()))\n"
+    "        print(f'[SELF-CHECK] sample message: {_msg[:120]!r}')\n"
     "    except Exception as _e:\n"
     "        print('[SELF-CHECK] (sample-message note:', type(_e).__name__, str(_e)[:60], ')')\n"
     "    print('[SELF-CHECK] READY — packaged OK. Real attack runs during the hidden rerun.')\n"
@@ -101,7 +108,8 @@ SERVE = (
 def build(title: str) -> None:
     attack_src = ATTACK.read_text()
     assert "'''" not in attack_src, "triple-single-quote breaks the r''' embed"
-    assert "<|" not in attack_src, "raw control tokens are unsafe"
+    # NOTE: harmony control tokens (<|...|>) are INTENTIONAL in the message body from v12 on
+    # (reasoning-suppression, the top-scorer throughput lever) — the old blanket ban was wrong.
     write_cell = (
         "attack_code = r'''\n" + attack_src + "\n'''\n"
         "attack_path = WORKING / 'attack.py'\n"
