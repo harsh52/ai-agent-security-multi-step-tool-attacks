@@ -132,6 +132,16 @@ wall, invest in the Working Note** (docs/WORKING_NOTE.md — the parallel-ladder
 are the real contribution). To beat 26.43 would require an attack the private cell tolerates at higher volume
 (fewer/denser candidates or a different predicate) — all only testable via the 10h scoring oracle.
 
+**v10/v11 DISCRIMINATOR (2026-07-19) — candidate-count is NOT the lever (hypothesis DISCONFIRMED):** held post
+count fixed, halved candidate count via multi-hop (2 posts/msg). v10 (14 cand x 448 posts) -> ERROR; v11 (20
+cand x 640 posts) -> ERROR — the SAME crashes as the many-candidate rungs at the same post counts (28c/448p,
+40c/640p). => **the binding variable is TOTAL POST COUNT (~256-320), invariant to candidate count or
+single-vs-multi-hop packaging.** Pure single-predicate exfil is definitively capped ~256 posts / ~26.43; no
+"fewer denser candidates" path exists. (Minor caveat: multi-hop was a new confound, but single-hop RungL
+crashing at the same 448 posts isolates post-count as the killer.) Only remaining theoretical path = a
+*different predicate* the private cell tolerates (e.g. CONFUSED_DEPUTY email) — untested, oracle-only, private
+board sealed regardless. **ENDPOINT: 26.43 banked; the Working Note is the deliverable.**
+
 ---
 
 ## 2. The three hard constraints (each one killed a submission)

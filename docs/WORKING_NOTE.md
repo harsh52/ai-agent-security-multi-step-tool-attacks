@@ -125,7 +125,10 @@ limit. The **private** cell is the opposite. Reading the scorer's response acros
 
 Both failure modes raise a `GatewayRuntimeError`, and because the harness zeros **all four cells** on *any* one
 cell's failure, the practical effect is a **hard ceiling**: the whole submission's score is bounded by the
-*most fragile* cell, independent of how much the public cells could score. A defensive control that is stateful
+*most fragile* cell, independent of how much the public cells could score. A controlled follow-up confirmed the
+ceiling is a function of **total post volume specifically** — holding post count fixed while *halving* the
+candidate count (via multi-hop messages) reproduced the crash identically, so the limit is invariant to how the
+volume is packaged (candidate count, chain length, single- vs multi-hop). A defensive control that is stateful
 and/or expensive per call thus behaves, at scale, like a **denial-of-service against the evaluation itself** —
 first crashing, then timing out, as load increases.
 
