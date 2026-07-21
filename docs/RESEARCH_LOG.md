@@ -95,6 +95,12 @@ before proposing anything; read **Validated Methods** before running an experime
 | v23 | gpt_stop + short-url (submitted) | *proj ~113* |
 
 ## Open levers / next
-- **v24 min-prompt:** gpt is prompt-processing-bound (~11s flat regardless of output tokens) — a shorter
-  user message may cut its fixed cost. Test on the CPU bench before submitting.
-- Validate the CPU proxy against v22's real landing (should be ~108); refine the calibration if it differs.
+- **gpt is at its floor.** CPU time barely moved across v15/v22/v23 (11.95→11.77→11.36s) despite token AND
+  message-length changes → it's **fixed-cost-bound** (two forward passes of a 20B model on CPU), NOT tunable
+  by output-token or prompt tricks. gpt cell ~104–109 is about the ceiling. **Do NOT chase gpt further.**
+- **gemma was the only real lever** and v22/v23 captured it (74→116). Both cells are now near their floors,
+  so **v23 (~113) is close to the public ceiling** — further public gains are marginal (~few %).
+- **The remaining upside is the PRIVATE board (gold ranking):** our clean user-sourced exfil transfers; keep
+  it maximally clean (single user message, no file/web reads) — v23 already is.
+- **Validate the CPU proxy** against v22's real landing (should be ~108) and v23 (~113); refine calibration
+  if the real numbers differ, and record the delta here.
