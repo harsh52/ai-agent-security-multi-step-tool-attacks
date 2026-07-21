@@ -66,6 +66,17 @@ before proposing anything; read **Validated Methods** before running an experime
 - **M6 — Bench harness latency (16s/candidate) taken as real.** Artifact of building a fresh env per trial;
   the faithful gateway is ~1s on GPU / ~11s on CPU. **Measure via the gateway path, not ad-hoc loops.**
 
+- **M7 — The CPU-proxy OVER-PROJECTED token-minimization (v22 projected ~108, real = 86.3).** BIG lesson.
+  The CPU bench assumed real score scales with CPU seconds-per-candidate (token-bound). It does NOT: v22
+  (gpt_stop, fewer tokens) came in at **86.3 — BELOW v15's 88.9**, and v23 (even fewer) is expected similar.
+  Why the proxy failed: (a) the real board is dominated by **fixed per-candidate overhead** (env build + two
+  20B forward passes + prompt-processing), so shaving *output* tokens barely moves total time; (b) **high
+  run-to-run variance** — the same v12-engine configs scored 74.9 (v14), 84.1 (v21), 86.3 (v22), 86.4 (v13),
+  88.9 (v15): a ±7–10 spread that swamps any token gain. **The CPU proxy is a RELATIVE-timing tool at best,
+  not an absolute score predictor; token-min gains live inside the noise.** Do NOT chase output-token tricks
+  further. **v15 (88.9) is our best and the public frontier — the field converges ~89 and token-min doesn't
+  break it.** Public is capped; real remaining upside is the private board + the Working Note deliverable.
+
 ---
 
 ## Key verified facts (numbers)
