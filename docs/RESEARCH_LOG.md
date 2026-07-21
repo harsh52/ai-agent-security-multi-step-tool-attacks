@@ -55,8 +55,13 @@ before proposing anything; read **Validated Methods** before running an experime
 - **M4 — "108 is a stretch / maybe unreachable."** Partly wrong. The CPU bench (2026-07-21) projects
   **v22 ≈ 108, v23 ≈ 113** — reachable. The error was assuming gpt was the lever; **gemma was the weak cell.**
 
-- **M5 — Multi-HOP to amortize overhead.** Dead for gpt: it re-enters the `analysis` channel between hops →
-  *more* tokens, not fewer (52 vs 36 tok/exfil). Unreliable for gemma (asks 8, fires ~2). **Don't pursue.**
+- **M5 — Multi-HOP to amortize the wasted "final" generation.** DEAD, now confirmed on **CPU seconds-per-
+  exfil** (2026-07-21, `notebook_cputime/cpu-multihop`), not just token-count. gpt: multihop2 does shave the
+  wasted final (10.66 vs 11.48 s/exfil) but the **novelty loss** (half the findings → less +2/cell) cancels
+  it (cell 111 vs 109); multihop4/8 are **catastrophic** (151–220 s/candidate — gpt re-reasons to the token
+  cap). gemma: single-post wins outright (cell 116); multihop is **unreliable** (asks 2–8, fires ~1–2 →
+  cells 77/87/97). Net: a multihop build gives gpt +2 but costs gemma ~20–40 → **mean drops. Never pursue.**
+  **Single-post v23 (~113) is optimal for both cells; the public board is at its floor.**
 
 - **M6 — Bench harness latency (16s/candidate) taken as real.** Artifact of building a fresh env per trial;
   the faithful gateway is ~1s on GPU / ~11s on CPU. **Measure via the gateway path, not ad-hoc loops.**
