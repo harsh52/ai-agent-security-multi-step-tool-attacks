@@ -107,8 +107,16 @@ before proposing anything; read **Validated Methods** before running an experime
 | v12 | self-limiting single-post + harmony suppress | 77.36 |
 | v15 | inj_empty + REPLAY_SAFE 0.992 + domain diversity | **88.92** (banked best) |
 | v18 | multi-message, PRIVATE_FACTOR=2.2 (over-throttled) | 34.79 |
-| v22 | gpt_stop min-token (submitted) | *proj ~108* |
-| v23 | gpt_stop + short-url (submitted) | *proj ~113* |
+| v21 | v15 engine + imperative gemma template | 84.1 (imperative backfired) |
+| v22 | gpt_stop min-token | **86.3** (proj ~108 — CPU proxy WRONG, see M7) |
+| v23 | gpt_stop + short-url | **87.6** (token-min = wash vs v15) |
+| v24 | PRIVATE-DIVERSITY: exfil 80% + CONFUSED_DEPUTY 20% | 59.4 public (private bet; select at finale) |
+
+**SETTLED (2026-07-22):** public is capped at the field frontier ~89; **v15 (88.9) is our public best**, token-min
+is a wash (v22 86.3 / v23 87.6), and every public lever is exhausted (token-min, multi-hop, url-min, probe-min,
+rival-mining — we're ahead of the field via the gemma trick). **v24 is the only private/gold play** (2 predicate
+families to survive a possible anti-repetition private scorer). **Finale plan: SELECT v15 for public; for the
+private ranking select v24 IF anti-repetition is likely, else v15. Both banked.** Deadline 2026-09-01.
 
 ## Open levers / next
 - **gpt is at its floor.** CPU time barely moved across v15/v22/v23 (11.95→11.77→11.36s) despite token AND
