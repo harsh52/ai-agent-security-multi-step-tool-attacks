@@ -110,7 +110,13 @@ before proposing anything; read **Validated Methods** before running an experime
 | v21 | v15 engine + imperative gemma template | 84.1 (imperative backfired) |
 | v22 | gpt_stop min-token | **86.3** (proj ~108 — CPU proxy WRONG, see M7) |
 | v23 | gpt_stop + short-url | **87.6** (token-min = wash vs v15) |
-| v24 | PRIVATE-DIVERSITY: exfil 80% + CONFUSED_DEPUTY 20% | 59.4 public (private bet; select at finale) |
+| v24 | PRIVATE-DIVERSITY: exfil 80% + CONFUSED_DEPUTY 20% | 59.4 public (private bet) |
+| v24b | PRIVATE-DIVERSITY 10% deputy (balanced) | 78.0 public (private bet) |
+
+**PRIVATE-DIVERSITY LADDER (all banked, pick one at the finale for the private ranking):**
+v15 = 0% deputy / 88.9 pub · v24b = 10% / 78.0 · v24 = 20% / 59.4. Deputy cost is super-linear
+(~11 pts @10%, ~29 @20% — deputy is lower-weight AND slower). Finale rule: private linear -> pick v15;
+private anti-repetition (rewards 2nd family) -> pick v24b or v24. Public deploy = v15 regardless.
 
 **SETTLED (2026-07-22):** public is capped at the field frontier ~89; **v15 (88.9) is our public best**, token-min
 is a wash (v22 86.3 / v23 87.6), and every public lever is exhausted (token-min, multi-hop, url-min, probe-min,
