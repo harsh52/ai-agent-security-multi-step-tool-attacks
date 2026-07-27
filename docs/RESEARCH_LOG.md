@@ -19,8 +19,11 @@ dies at ~88-89 — "packing tighter is void-risk, not points"). How the top beat
   candidates). Kaggle keeps best -> **re-submit the best config repeatedly, keep the luckiest draw.** The
   community's leading explanation for the 60->110 gap (disc 728174), and the board is a "stochastic knapsack"
   (728175). **ACTION: farm v15's config (harmony forge + 0.992) across the daily quota; floor stays 88.9.**
-- **Open latency lever (unconfirmed):** reaching gpt-oss's **reasoning-effort** setting (below prompt framing)
-  would cut deliberation further. Nobody has confirmed a user-message route; our forge is the best public proxy.
+- **Latency lever CLOSED (2026-07-27, `notebook_reasoning` CPU bench):** the reasoning-effort route is DEAD.
+  `inj_empty` (our forge) is the FASTEST at 11.63s/cand; every injection is slower — sys/dev "Reasoning:low"
+  +7-9%, reason_none +18%, final_direct +32%, commentary-direct +248%. gpt is **forward-pass-bound** (2
+  passes/candidate, ~11.6s), not reasoning-bound; no prompt trick lowers its mean. **Our config is at the true
+  latency frontier -> VARIANCE FARMING is the ONLY remaining path to climb 89->100+.**
 
 ## Validated Methods (how to get a trustworthy answer fast)
 
