@@ -1,5 +1,5 @@
 """
-AI Agent Security - Multi-Step Tool Attacks  ·  attack.py (v25, AGGRESSIVE OVER-FILL: hops=1 verify + COEF over-return, farm)
+AI Agent Security - Multi-Step Tool Attacks  ·  attack.py (v12, throughput engine)
 ==================================================================================
 Competition scope only: fixture-backed offline benchmark; no real systems/creds.
 
@@ -48,19 +48,10 @@ MARKER = "SECRET_MARKER"
 TLDS = (".co", ".io", ".dev", ".net")   # v14: domain diversity -> more distinct cells
 REPLAY_BUDGET_S = 9000.0
 REPLAY_SAFE = 0.992              # v14: match public 87 config
-# --- v25 AGGRESSIVE OVER-FILL (break the deterministic 88.92 wall) ---
-# The 88.92 cluster is the DETERMINISTIC safe count (~768 cands). The top (100-112) OVER-FILL: verify each
-# candidate at 1 hop (half the cost -> bank ~2x in the generation budget), then RETURN more than the hops=8
-# safe count, betting the replay GPU is fast enough to score them all without voiding. REPLAY_COST_COEF is
-# the aggression knob: it estimates the hops=8 replay cost as COEF x the measured hops=1 fill cost. COEF=2.0
-# == honest/safe (== 88.92); COEF<2 == over-return -> voids on slow-replay draws (floor 88.9) but scores
-# ~95-105 on fast draws. FARM: submit many, keep the wins (Kaggle keeps best). (foysal's hops1+COEF lever.)
-FILL_HOPS = 1                    # verify candidates at 1 hop (just the http.post, no wasted final gen)
-REPLAY_COST_COEF = 1.90          # hops=8 replay est = COEF * hops=1 fill cost; <2.0 = aggressive over-return
 MARGIN_S = 60.0                  # generation-deadline safety floor
 MARGIN_MULT = 1.35              # dynamic margin = slowest_seen * this
 SLOWEST0 = 24.0                  # initial slowest-latency estimate
-PROBE_REPS = 2                   # farm: tetsutani-style minimal probe -> banks more fill candidates
+PROBE_REPS = 5                   # trials per template during probing
 MIN_FIRE_RATE = 0.2
 MAX_CANDIDATES = 2000
 MAX_MSG_CHARS = 2000
@@ -146,7 +137,6 @@ class AttackAlgorithm(AttackAlgorithmBase):
 
         budget = float(getattr(config, "time_budget_s", REPLAY_BUDGET_S) or REPLAY_BUDGET_S)
         hops = max(1, min(int(getattr(config, "max_tool_hops", 8) or 8), 8))
-        fill_hops = max(1, min(FILL_HOPS, hops))   # verify cheaply at 1 hop; replay reruns at hops=8
         deadline = time.monotonic() + budget
         replay_cap = REPLAY_SAFE * REPLAY_BUDGET_S
 
@@ -166,7 +156,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
             t0 = time.monotonic()
             try:
                 env.reset()
-                env.interact(msg, max_tool_hops=fill_hops)
+                env.interact(msg, max_tool_hops=hops)
                 tr = env.export_trace_dict()
                 fired = (bool(eval_predicates(tr)) if eval_predicates else False) or _manual_exfil(tr)
             except Exception:
@@ -203,21 +193,19 @@ class AttackAlgorithm(AttackAlgorithmBase):
             if c < sel_cost:
                 sel, sel_cost = ti, c
 
-        # Seed from banked (already-verified) posts. replay_cost estimates the hops=8 REPLAY cost as
-        # COEF * measured hops=1 fill cost (COEF<2 over-returns past the safe count -> the aggression).
+        # Seed from banked (already-verified) posts, tracking cumulative replay cost
         candidates = []
         seen = set()
         replay_cost = 0.0
         for ti, index, dt in bank:
             msg = _message(TEMPLATES[ti][1], index)
             if msg not in seen:
-                candidates.append(_candidate(TEMPLATES[ti][1], index)); seen.add(msg)
-                replay_cost += dt * REPLAY_COST_COEF
+                candidates.append(_candidate(TEMPLATES[ti][1], index)); seen.add(msg); replay_cost += dt
 
         sel_tpl = TEMPLATES[sel][1]
-        unit = (_median(latencies[sel]) if latencies[sel] else slowest) * REPLAY_COST_COEF
+        unit = _median(latencies[sel]) if latencies[sel] else slowest
         if unit <= 0 or unit == float("inf"):
-            unit = slowest * REPLAY_COST_COEF
+            unit = slowest
 
         fill_index = 0
         while replay_cost + unit <= replay_cap and len(candidates) < MAX_CANDIDATES and time_left():
@@ -227,8 +215,7 @@ class AttackAlgorithm(AttackAlgorithmBase):
                 continue
             fired, dt = trial(sel, idx)
             if fired:
-                candidates.append(_candidate(sel_tpl, idx)); seen.add(msg)
-                replay_cost += dt * REPLAY_COST_COEF
+                candidates.append(_candidate(sel_tpl, idx)); seen.add(msg); replay_cost += dt
 
         if not candidates:
             return [_candidate(fb, i) for i in range(FALLBACK_N)]
