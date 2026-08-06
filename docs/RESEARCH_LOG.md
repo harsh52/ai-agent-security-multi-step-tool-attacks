@@ -5,6 +5,27 @@ before proposing anything; read **Validated Methods** before running an experime
 
 ---
 
+## ★★★ EVALUATOR UPDATE (2026-08-06, disc 733058) — REOPENS the path past 88.92; DON'T conclude "ceiling"
+
+The host is updating the evaluator + INVALIDATING the leaderboard + offering a **2-submission rerun per team**.
+Two changes that undo our two failure modes:
+- **Partial scores preserved on replay timeout** (was: timeout -> 0 void). Over-fill no longer voids — you keep
+  everything scored before the 9000s cutoff. **The void risk that killed v25/v26 over-fill is GONE -> over-fill
+  is now free upside; return MANY candidates.**
+- **Gemma tool-call parser fixed** — Gemma wrapped subsequent tool calls in `{}` which broke MULTI-post parsing
+  (why our gemma multipost fired only 1-2 of 5). **Now fixed -> gemma multi-endpoint should fire all K.**
+- **Top technique now visible** (disc 732447, a top team's v46): **"adaptive K (1-8) + K-probing + K=1 fill
+  hops=1"** = adaptive multi-endpoint (K probed per model) + cheap hops=1 verify. Confirms multi-endpoint IS
+  the 100+ lever; our v26 failed only because (a) gemma couldn't parse multipost and (b) over-fill voided —
+  BOTH now fixed.
+- **730293:** "the gpt_oss row is the gate" (Harmony pays analysis+tool+final/candidate). Lever is per-model:
+  gpt low-K, gemma high-K.
+- **NEXT:** re-bench multi-endpoint on the UPDATED SDK (does gemma now fire K?); build adaptive-K attack
+  (gpt K=1, gemma high-K) + hops=1 fill + over-fill (partial-preservation safe); pick our 2 best for the rerun.
+- **CAVEAT:** eval had a system-error queue jam since Aug 2 (732447); confirm submissions score before farming.
+- **Lesson (corrects M8's "88.92 is the ceiling"): the ceiling was an ARTIFACT of the OLD evaluator's void +
+  gemma-parse bugs. The user was right — 100+ is real and now reachable. Re-open multi-endpoint.**
+
 ## ★ BREAKING THE ~89 WALL (2026-07-27, from discussions 728947/728174/728175 — the top is 105-112, not 89)
 
 The public top moved to **105-112** (Mohammad Shadab 111.8, Rishi 110.1, Pilkwang 108). We were WRONG that
