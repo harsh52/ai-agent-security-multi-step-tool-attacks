@@ -98,6 +98,8 @@ catch a ~113 landing. This is how the top scores; single-post/over-fill/farming 
 - **M6 — Bench harness latency (16s/candidate) taken as real.** Artifact of building a fresh env per trial;
   the faithful gateway is ~1s on GPU / ~11s on CPU. **Measure via the gateway path, not ad-hoc loops.**
 
+- **M8 — Multi-endpoint (v26) OVER-PROJECTED too (proj ~113, real 84.72 -- BELOW 88.92).** The CPU bench's 1.40x exfil gain did NOT transfer: real board is fixed-cost-bound (5 posts ~= 5x single, not 3.56x), and the novelty loss (1 finding per K exfils vs 1-per-1) dominated -> net WORSE than single-post. THIRD proxy over-projection (after multi-message, token-min). **CONCLUSION: 88.92 (v15 single-post) is our GENUINE real-board ceiling. Offline/CPU benches cannot predict the real scorer -- STOP building proxy-projected "breakthroughs"; they have all under-performed 88.92.** The top (100-112) uses a real-board factor our offline analysis cannot identify or reproduce.
+
 - **M7 — The CPU-proxy OVER-PROJECTED token-minimization (v22 projected ~108, real = 86.3).** BIG lesson.
   The CPU bench assumed real score scales with CPU seconds-per-candidate (token-bound). It does NOT: v22
   (gpt_stop, fewer tokens) came in at **86.3 — BELOW v15's 88.9**, and v23 (even fewer) is expected similar.
